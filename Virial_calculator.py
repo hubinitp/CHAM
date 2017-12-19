@@ -1,4 +1,4 @@
-# Xue-wen Liu @10.31 2017
+# Xue-wen LIU, Bin HU @10.31 2017
 # This Python code calculate spherical collapse evolution in
 # modify gravity-including characteristic density perturbation, evolution 
 # linear density perturbation

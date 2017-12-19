@@ -1,4 +1,4 @@
-# created by Xue-Wen Liu @10.23 2017
+# created by Xue-Wen LIU, Bin HU @10.23 2017
 # This code solves non-linear power spectrum using Halo model with different distribution function including Press-Sheth, Sheth-Tormen, Random Walk Formalism(arXiv:0508384)
 
 import numpy as np

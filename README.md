@@ -16,7 +16,7 @@ The latter calculates the non-linear spectrum via the screened halo model.
 ***************************
 -installation request-
 
-In order to run CHAM, you need firstly install 'parallel python' module and 'pyyaml' module. 
+In order to run CHAM, you need firstly install/import 'sympy' module, 'parallel python' module and 'pyyaml' module. 
 
 ***************************
 -run-
