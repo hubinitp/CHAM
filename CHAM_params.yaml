@@ -1,0 +1,50 @@
+#Virial_calculator input
+#model parameters
+
+a1: 8.8342
+b1: 6.42417
+r01: 0.46317
+
+a2: -5.95864
+b2: 1.5566
+r02: 28.78104
+
+#min, max, number of samplings of 'r' in [Mpc]
+
+rad_min: 0.0099
+rad_max: 110.0
+num_rad: 120
+
+#Virial_calculator output
+
+delta_sc: delta_sc.dat
+
+#number of threads
+
+num_thread: 8
+
+#--------------------------------------------------------------
+
+#CHAM input
+#Linear matter power spectrum from EFTCAMB
+
+linear_mpk: HS_F5_linear_mpk.dat
+lcdm_linear_mpk: lcdm_linear_mpk.dat
+
+#Parameters
+
+omg_m: 0.24
+hub: 0.73
+sigma8: 0.80
+rho_c: 6.6e+11
+k_min: 1.0e-4
+kmax_linear: 650.0
+kmax_halo: 20.0
+num_k: 600
+r_min: 0.01
+r_max: 99
+num_r: 200
+
+#CHAM output
+
+nonlinear_mpk: nonlinear_mpk.dat

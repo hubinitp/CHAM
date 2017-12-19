@@ -10,47 +10,22 @@ import random
 import os, time
 import pp
 import scipy.optimize
+import scipy.optimize
+import yaml
 
-# initial time, matter parameter, initial overdensity
-CP = {'r_min':0.005, 'r_max':150.0, 'num_r':110}
+# Load some external config file
+with open('./CHAM_params.yaml') as fp:
+    config = yaml.load(fp)
 
-# top-hat radius function
-def top(x):
-        top = (1.0+CP['c2']*x**(-3.0))**(1.0/(CP['alpha']-1.0))
-        top = top - (1.0+CP['c3']*x**(-3.0))**(1.0/(CP['alpha']-1.0))
-        top = -CP['c1']*x*top
-        return top
-
-# six equations 
-
-def equations(p):
-        a1, b1, r01, a2, b2, r02 = p
-        f1 = CP['Bb']*b1/r01**(a1*(b1-1.0)/b1) - 3.0*CP['c1']*CP['c3']**(1.0/(CP['alpha']-1))/(3.0+2.0*CP['omg_fr'])
-        f2 = a1*(b1 - 1.0)/b1 - (4.0-CP['alpha'])/(1.0-CP['alpha'])
-        f3 = (3.0*top(r01) - 3.0*top(r01)**2 + top(r01)**3)/(3.0+2*CP['omg_fr'])
-        f3 = f3 - CP['Bb']*b1*(2**(1.0/b1) - 1.0)
-        f4 = CP['Bb']*b2/r02**(a2*(b2-1.0)/b2) - 3.0*CP['c1']*CP['c2']/(3.0+2.0*CP['omg_fr'])
-        f5 = a2*(b2 - 1.0)/b2 + 2.0
-        f6 = (3.0*top(r02) - 3.0*top(r02)**2 + top(r02)**3)/(3.0+2*CP['omg_fr'])
-        f6 = f6 - CP['Bb']*b2*(2**(1.0/b2) - 1.0)
-
-        return (f1,f2,f3,f4,f5,f6)
-
-def f(p):
-        return abs(sum(numpy.array(equations(p))**2)-0.0)
-
-# Solving equations
-def Chame(Rsha):
-	#final parameter estimation is quite sensitive to the initial value setting
-	aa = scipy.optimize.fmin(f,(8.04,6.01,0.32,-5.62,1.42,27.6))
-	param_dat = scipy.optimize.fsolve(equations,(aa[0],aa[1],aa[2],aa[3],aa[4],aa[5]))
-#	a1, b1, r01, a2, b2, r02 = (param_dat[i] for i in range(6))
-	a1, b1, r01, a2, b2, r02 = 7.2583, 28.0987, 0.7555, -24.1235, 1.0904, 13.5432
-        if Rsha < (r01 + r02)/2.0:   
-                return b1*((Rsha/r01)**a1*(1+(r01/Rsha)**a1)**(1/b1)-(Rsha/r01)**a1)*CP['Bb']+1
+# effective gravitational coupling over Newton Constant
+def Chame(Rsha,arr):
+        a1, b1, r01, a2, b2, r02 = arr[0],arr[1],arr[2],arr[3],arr[4],arr[5]
+        Bb = 1./3.
+        if Rsha < (r01 + r02)/2.0:
+                return b1*((Rsha/r01)**a1*(1+(r01/Rsha)**a1)**(1/b1)-(Rsha/r01)**a1)*Bb+1
 
         else:
-                return b2*((Rsha/r02)**a2*(1+(r02/Rsha)**a2)**(1/b2)-(Rsha/r02)**a2)*CP['Bb']+1
+                return b2*((Rsha/r02)**a2*(1+(r02/Rsha)**a2)**(1/b2)-(Rsha/r02)**a2)*Bb+1
 
 
 def rk4(x, y, v, fa, dt):
@@ -129,56 +104,54 @@ def gRx(x,y,yp):
 	gRx = gRx - (y+numpy.exp(x)/CP['ai'])*0.5*((1+CP['deti'])*(CP['ai']*numpy.exp(-x)*y+1)**(-3)-1)*CP['GeoG']*CP['omg_m']*numpy.exp(-3*x)/(CP['omg_m']*numpy.exp(-3*x)+(1.0-CP['omg_m']))
 	return gRx	
 
-def odesolver(Rr):
+#..............
+#parallel code begin
+def odesolver(Rr,cp_arr,oufile):
         
 	x = {}
 	yypha = {}
 	lngr = {}
 	yrsp = {}
 	flag = xmin = DaDai = rha = rl = dclnha = flag_max = 0
-	
+		
 	global CP
 
-	CP = {'c1':0.66667, 'c2':100.0, 'c3':0.1, 'alpha':0.5, 'Bb':0.33333, 'omg_fr':0.0}
-	CP['GeoG'] = Chame(Rr)
-	print "GeoG, ", CP['GeoG']
+	CP = {}
+
+	CP['GeoG'] = Chame(Rr,cp_arr)
+	#print "GeoG, ", CP['GeoG']
 	CP['omg_m'] = 0.24
 	CP['ai'] = 1.0e-3
 	a_max = delt_max = 0
-        ppf = -1.25 + 1.25*numpy.sqrt(0.04+0.96*CP['GeoG'])  
-        lngr[0, 0], lngr[1, 0] = CP['ai'], CP['ai']*(1.0 + ppf)      # modify initial condition
+	ppf = -1.25 + 1.25*numpy.sqrt(0.04+0.96*CP['GeoG'])
+	lngr[0, 0], lngr[1, 0] = CP['ai'], CP['ai']*(1.0 + ppf)      # modify initial condition
 	metol = 1.e-4	  # when considering R(a) = 0
 	CP['deti'] = 2.315e-3
 	
 	while(flag != 1):
-	
-        	i, errct = 0, 0
+		i, errct = 0, 0
 		hmax, hmin, tol, hs = 8.e-4, 6.e-4, 2.e-4, 8.e-4
 		flag = 0
 		x[0], yrsp[0] = numpy.log(CP['ai']), 1.0  # initial time and position  ai???
 		yypha[0, 0], yypha[1, 0] = 0, -CP['deti']*(1.0 + ppf)/3.0
-#		print "zero-component, ", yypha[1,0]
-#		print "zero-component, ", lngr[1,0]
-	        while(x[i] <= 0):
+		
+		while(x[i] <= 0):
 		# x = ln(a), yrsp = r/r_i,  yypha = r/r_i - a/a_i,  lngr = growth function: D(a)
-	                (rha, yypha[0,i+1], yypha[1,i+1]) = rk4(x[i], yypha[0,i], yypha[1,i],gRx, hs)
-	                if rha <= tol:
-	                        hs = hs
+			(rha, yypha[0,i+1], yypha[1,i+1]) = rk4(x[i], yypha[0,i], yypha[1,i],gRx, hs)
+			if rha <= tol:
+				hs = hs
 # Now compute next step size, and make sure that it is not too big or
 # too small.
-                	else:
-	                        hs = hs * min( max( 0.84 * ( tol / rha )**0.25, 0.1 ), 4.0 )
-	                        if hs > hmax: hs = hmax
-                	        elif hs < hmin: hs = hmin
-	                x[i+1] = x[i] + hs
-        	        yrsp[i+1] = yypha[0,i+1] + numpy.exp(x[i+1])/CP['ai']
-	                (rl, lngr[0,i+1], lngr[1,i+1]) = rk4(x[i], lngr[0,i], lngr[1,i], dverli, hs)
-#			f2 = open("test_A.txt", "a+b")
-#	                f2.write(str(i)+" "+str(x[i])+" "+str(CP['deti'])+" "+str(yypha[0, i])+" "+str(lngr[0, i])+"\n")  # i + Radius + GeoG + delta_i + a_c + D(a=0)/D(a_i) + delta_c + a_max + \Delta_max
-#        	        f2.close()
+			else:
+				hs = hs * min( max( 0.84 * ( tol / rha )**0.25, 0.1 ), 4.0 )
+				if hs > hmax: hs = hmax
+				elif hs < hmin: hs = hmin
+			x[i+1] = x[i] + hs
+			yrsp[i+1] = yypha[0,i+1] + numpy.exp(x[i+1])/CP['ai']
+			(rl, lngr[0,i+1], lngr[1,i+1]) = rk4(x[i], lngr[0,i], lngr[1,i], dverli, hs)
 
-        	        if yrsp[i+1] <= yrsp[i]:
-                	        if flag_max == 0 :
+			if yrsp[i+1] <= yrsp[i]:
+				if flag_max == 0 :
                         	        a_max = numpy.exp(x[i])
                        	       	        delt_max = (1.0 + CP['deti'])*yrsp[i]**(-3.0)*(a_max/CP['ai'])**3.0 - 1.0
                         	        flag_max = 1
@@ -187,34 +160,34 @@ def odesolver(Rr):
         	                        xmin = x[i]
                 	                DaDai = lngr[0,i]/lngr[0,0]
                         	        dclnha = CP['deti']*DaDai
-					print "initial_overdensity:, ", CP['deti']
+					#print "initial_overdensity:, ", CP['deti']
  	                                if numpy.exp(xmin) >= 0.995 and numpy.exp(xmin) <= 1:
         	                                tmin = i 
                 	                        flag = 1
-						print "finished !"
+						#print "finished !"
                         	                break
                     	                else:
 						flag = 2
 	                                        break
        	        	i = i + 1
-                print numpy.exp(x[i])
+                #print numpy.exp(x[i])
 # choose to modify initial condition
 #		flag = 1
                 if flag == 1:
-                        f1 = open("halocrit.txt", "a+b")
-                        f1.write(str(1)+" "+str(Rr)+" "+str(Chame(Rr))+" "+str(CP['deti'])+" "+str(numpy.exp(xmin))+" "+str(DaDai)+" "+str(dclnha)+" "+str(a_max)+" "+str(delt_max)+"\n")  #Radius + GeoG + delta_i + a_c + D(a=0)/D(a_i) + delta_c + a_max + \Delta_max
+                        f1 = open(oufile, "a+b")
+                        f1.write(str(1)+" "+str(Rr)+" "+str(Chame(Rr,cp_arr))+" "+str(CP['deti'])+" "+str(numpy.exp(xmin))+" "+str(DaDai)+" "+str(dclnha)+" "+str(a_max)+" "+str(delt_max)+"\n")  #Radius + GeoG + delta_i + a_c + D(a=0)/D(a_i) + delta_c + a_max + \Delta_max
                         f1.close()
                         errct = 0
                         break
                 elif flag == 0:
-                        print "retrying-forward"
+                        #print "retrying-forward"
                         CP['deti'] = CP['deti'] + 3.0e-5
                         if errct == 2:
                                 CP['deti'] = random.uniform(1.5e-3, 2.4e-3)
                                 errct = 0
                         errct = errct + 1
                 elif flag == 2:
-                        print "retrying-backward"
+                        #print "retrying-backward"
                         if numpy.exp(xmin) <= 0.4: CP['deti'] = CP['deti'] - 4.0e-4
                         if numpy.exp(xmin) >0.4 and numpy.exp(xmin) <= 0.65: CP['deti'] = CP['deti'] - 3.0e-4
                         if numpy.exp(xmin) >0.65 and numpy.exp(xmin) <= 0.86: CP['deti'] = CP['deti'] - 1.2e-4
@@ -224,15 +197,17 @@ def odesolver(Rr):
                                 else: CP['deti'] = CP['deti'] - 3.e-6
 
         return (numpy.exp(xmin), dclnha, DaDai, a_max, delt_max)
+#parallel code end
+#.............
 
 # different radius
-logR_arr = numpy.linspace(numpy.log10(CP['r_min']), numpy.log10(CP['r_max']), CP['num_r'])
+logR_arr = numpy.linspace(numpy.log10(config['rad_min']), numpy.log10(config['rad_max']), config['num_rad'])
 Rr_arr = 10.0**logR_arr
 
-if os.path.exists("halocrit.txt"): os.remove("halocrit.txt")
+if os.path.exists(config['delta_sc']): os.remove(config['delta_sc'])
 
 ppservers = ()
-ncpus = 8
+ncpus = config['num_thread']
 #ppservers = ("10.0.0.1",)
 job_server = pp.Server(ncpus, ppservers=ppservers)
 
@@ -240,18 +215,39 @@ start_time = time.time()
 # The following submits 8 jobs and then retrieves the results
 inputs = Rr_arr
 
+cp_arr = numpy.zeros(6)
+cp_arr[0] = config['a1']
+cp_arr[1] = config['b1']
+cp_arr[2] = config['r01']
+cp_arr[3] = config['a2']
+cp_arr[4] = config['b2']
+cp_arr[5] = config['r02']
+
+oufile = config['delta_sc']
+
 #Test
 #test_scale = 0.01
 #sigma = odesolver(test_scale)
-#print sigma
-jobs = [(input, job_server.submit(odesolver, (input,), (Chame,dverli,gRx,rk4,f,equations,top,), ("numpy", "scipy.optimize",))) for input in inputs]
+
+jobs = [(input, job_server.submit(odesolver, (input,cp_arr,oufile,), (Chame,dverli,gRx,rk4,), ("numpy", "scipy.optimize",))) for input in inputs]
+
+print "Calculating critical density, please wait ... ..."
 
 for input, job in jobs:
-	print "Output: ", job()
+	job()
+	#print "Output: ", job()
 
 print "Time elapsed: ", time.time() - start_time, "s"
 job_server.print_stats()
 
-os.rename("halocrit.txt", "halocritemp.txt")
+#-----------------------------------------------------------
+# resort data file by r-range
+
+detc_file = config['delta_sc']
+detc_temp = numpy.loadtxt(detc_file)
+detc_dat = detc_temp[numpy.argsort(detc_temp[:, 1])]
+detc_dat[:, 0] = numpy.linspace(1, config['num_rad'], config['num_rad'])
+if os.path.exists(detc_file): os.remove(detc_file)
+numpy.savetxt(detc_file, detc_dat, fmt='%10.7f')
 
 exit()
