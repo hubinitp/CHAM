@@ -27,7 +27,7 @@ num_thread: 4
 
 #CHAM input
 #Linear matter power spectrum from EFTCAMB
-linear_mpk: F5_EC_matterpower.dat
+linear_mpk: F6_EC_matterpower.dat
 
 #linear_mpk: lcdm_linear_mpk.dat
 lcdm_linear_mpk: GR_EC_matterpower.dat
@@ -58,5 +58,5 @@ num_r: 200
 R_arr_len: 200
 
 #CHAM output
-nonlinear_mpk: nonlinear_mpk_F5_nondyn_EC.dat
+nonlinear_mpk: nonlinear_mpk_F6_nondyn_EC.dat
 
