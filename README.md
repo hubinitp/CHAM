@@ -37,7 +37,7 @@ The GCC compiler is needed to compile Cython extensions.
 
 python Virial_calculator.py
 
-python CHAM_origin.py
+python CHAM_ori.py
 
 ***************************
 # run (accelerated version)

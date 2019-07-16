@@ -23,7 +23,8 @@ start_time = time.time()
 delta_sc_nondyn = 1.692
 # Load some external config file
 with open('./CHAM_params.yaml') as fp:
-    CP = yaml.load(fp, Loader=yaml.UnsafeLoader)
+    CP = yaml.load(fp)
+    #CP = yaml.load(fp, Loader=yaml.UnsafeLoader)
 
 CP['rho_m'] = CP['omg_m'] * CP['rho_c'] / CP['hub']**3.0
 
