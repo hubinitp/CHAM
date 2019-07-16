@@ -21,30 +21,42 @@ delta_sc: delta_sc.dat
 
 #number of threads
 
-num_thread: 8
+num_thread: 4
 
 #--------------------------------------------------------------
 
 #CHAM input
 #Linear matter power spectrum from EFTCAMB
+linear_mpk: F5_EC_matterpower.dat
 
-linear_mpk: HS_F5_linear_mpk.dat
-lcdm_linear_mpk: lcdm_linear_mpk.dat
+#linear_mpk: lcdm_linear_mpk.dat
+lcdm_linear_mpk: GR_EC_matterpower.dat
 
 #Parameters
 
 omg_m: 0.24
+Omega_m0: 0.24
+
 hub: 0.73
+hubble_dimless: 0.73
+
 sigma8: 0.80
 rho_c: 6.6e+11
 k_min: 1.0e-4
-kmax_linear: 650.0
-kmax_halo: 20.0
+
+kmax_linear: 12.0
+kmax_halo: 12.0
 num_k: 600
+#num_k: 800
+
 r_min: 0.01
 r_max: 99
+R_min: 0.01
+R_max: 99
+
 num_r: 200
+R_arr_len: 200
 
 #CHAM output
+nonlinear_mpk: nonlinear_mpk_F5_nondyn_EC.dat
 
-nonlinear_mpk: nonlinear_mpk.dat

@@ -115,10 +115,15 @@ def ZHfunc(detc_arr, sig_arr, mss_arr, num_rr, rho_m):
 	dlsdlm_arr[num_rr-1] = dlsdlm[num_rr-2]
 
 	sigm2_array = sig_arr**2.0
-	sig2new_min = min(sigm2_array) + 0.00001
-	sig2new_max = max(sigm2_array) - 0.00001
-	step = 0.02
-	sigm2_new = numpy.arange(sig2new_min, sig2new_max, step)
+	# sig2new_min = min(sigm2_array) + 0.00001
+	# sig2new_max = max(sigm2_array) - 0.00001
+        sig2new_min = numpy.min(sigm2_array)
+        sig2new_max = numpy.max(sigm2_array)
+
+	step = 0.01
+	#sigm2_new = numpy.arange(sig2new_min, sig2new_max, step)
+        sigm2_new = numpy.linspace(sig2new_min, sig2new_max, int((sig2new_max-sig2new_min)/step))
+
 	num_sig2new = len(sigm2_new)
 	detcsig2_interp = scipy.interpolate.interp1d(sigm2_array, detc_arr)
 	detcnew = detcsig2_interp(sigm2_new)
@@ -274,10 +279,10 @@ HS['dtac_file'] = CP['delta_sc']    #pre-calcuated delta_c file
 HS['pok_file'] = CP['linear_mpk']  #linear Hu-Sawicki p(k) from EFTCAMB
 HS['dtac_dat'] = np.loadtxt(HS['dtac_file'])
 
-GeoG_data = HS['dtac_dat'][:, 2]
-ata_data = HS['dtac_dat'][:, 7]
-Delta_data = HS['dtac_dat'][:, 8]
-deti_data = HS['dtac_dat'][:, 3]
+GeoG_data = HS['dtac_dat'][:, 2] #G_{eff}/G_N
+ata_data = HS['dtac_dat'][:, 7] #scale_factor @ turn_around_point
+Delta_data = HS['dtac_dat'][:, 8] #nonlinear_density @ turn_around_point
+deti_data = HS['dtac_dat'][:, 3] #initial_density
 
 ai = 1.e-3  #initial time set for spherical collapse
 Rta_array = ata_data/ai*((1.0 + deti_data)/(1.0 + Delta_data))**0.33333   # Maximum Radius
@@ -296,7 +301,7 @@ Delvir_array = (1.0 + Delta_data)*(Ss*ata_data)**(-3.0) - 1.0  # \Delta_vir
 hsdetvir_iterp = scipy.interpolate.interp1d(HS['dtac_dat'][:,1],  Delvir_array)
 
 HS['sigma'] = sigm(HS['pok_file'])
-hsdetc_iterp = scipy.interpolate.interp1d(HS['dtac_dat'][:,1],  HS['dtac_dat'][:,6])
+hsdetc_iterp = scipy.interpolate.interp1d(HS['dtac_dat'][:,1],  HS['dtac_dat'][:,6]) 
 HS['dtac_arr'] = hsdetc_iterp(r_arr)
 HS['dtavir_arr'] = hsdetvir_iterp(r_arr)
 
