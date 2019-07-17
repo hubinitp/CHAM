@@ -17,7 +17,7 @@ CHAM is a python script for the non-linear matter power spectrum for the alterna
 
 It contains two version of the code. 
 
-v1: Virial_calculator.py and CHAM_ori.pyi
+v1: Virial_calculator.py and CHAM_ori.py
 
 v2: cham_nondyn.py
 
