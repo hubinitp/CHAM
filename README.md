@@ -11,7 +11,7 @@
 ###########################
 # description
 
-python2.7
+python2.7 or python 3.7
 
 CHAM is a python script for the non-linear matter power spectrum for the alternative theories to LCDM. 
 
@@ -48,7 +48,7 @@ python CHAM_ori.py
 ###########################
 # run (accelerated version)
 
-python setup.py build_ext --inplace
+CC=gcc python setup.py build_ext --inplace
 
 python cham_nondyn.py
 
